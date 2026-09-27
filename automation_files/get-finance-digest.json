@@ -1,0 +1,141 @@
+{
+  "name": "Get Finance Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{ $env.ERP_REPORTING_URL }}/reporting/finance/daily",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "date",
+              "value": "={{ $now.setZone(\"Asia/Jakarta\").toFormat(\"yyyy-LL-dd\") }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Automation-Secret",
+              "value": "={{ $env.AUTOMATION_REPORT_SECRET }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0c1086aa-6efc-4966-ab43-4cad75635d77",
+      "name": "Fetch prior-day report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 300000
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = $input.first().json.message;\nconst recipientEmails = report.recipientEmails || [];\nif (!recipientEmails.length) throw new Error(\"The ERP report did not include any recipient email addresses.\");\nconst money = value => new Intl.NumberFormat(\"id-ID\", { style: \"currency\", currency: \"IDR\", maximumFractionDigits: 0 }).format(Number(value));\nconst subject = `Daily finance digest — ${report.reportingDate}`;\nconst html = `<h2>Daily finance digest</h2><p><strong>Date:</strong> ${report.reportingDate} (${report.timezone})</p><table><tr><td>Income</td><td>${money(report.income)}</td></tr><tr><td>Manufacturing expense</td><td>${money(report.manufacturingExpense)}</td></tr><tr><td>Income minus expense</td><td>${money(report.incomeMinusExpense)}</td></tr><tr><td>Completed orders</td><td>${report.completedOrderCount}</td></tr><tr><td>Cancelled orders</td><td>${report.cancelledOrderCount}</td></tr></table>`;\nreturn [{ json: { subject, html, toEmail: recipientEmails.join(\",\") } }];"
+      },
+      "id": "30e703bf-a08d-4f64-a074-7ec9dbe2a2f2",
+      "name": "Format email digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.FINANCE_REPORT_FROM }}",
+        "toEmail": "={{ $json.toEmail }}",
+        "subject": "={{ $json.subject }}",
+        "html": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "5b09853c-cef1-41e0-a041-365c2419c3b8",
+      "name": "Send finance digest",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        752,
+        -112
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 300000,
+      "webhookId": "862a3718-4180-44cf-9901-62789d09f218",
+      "credentials": {
+        "smtp": {
+          "id": "VED4NpuL2nKKIEhY",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        -176
+      ],
+      "id": "5e492bb4-3d3e-4bed-9a5e-d313b604bc39",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Fetch prior-day report": {
+      "main": [
+        [
+          {
+            "node": "Format email digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format email digest": {
+      "main": [
+        [
+          {
+            "node": "Send finance digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Fetch prior-day report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timezone": "Asia/Jakarta"
+  },
+  "versionId": "bda1e567-8be3-4b49-89f9-daf4e189cc30",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "69a44a9e7b59cd70b3095e88e1cb29915411cedb64bbc719ca86af3ae44c9a60"
+  },
+  "nodeGroups": [],
+  "id": "ko9MHuAHmdG8bR1r",
+  "tags": []
+}
