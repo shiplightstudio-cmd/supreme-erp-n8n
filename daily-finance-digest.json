@@ -1,0 +1,128 @@
+{
+  "name": "Daily Finance Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "77f676c7-5765-435f-9c4c-a12861bfbdb2",
+      "name": "Every day at 08:00 Jakarta",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERP_REPORTING_URL }}/reporting/finance/daily",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "date",
+              "value": "={{ $now.setZone(\"Asia/Jakarta\").minus({ days: 1 }).toFormat(\"yyyy-LL-dd\") }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Automation-Secret",
+              "value": "={{ $env.AUTOMATION_REPORT_SECRET }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "12e2ffb5-5b1b-4ff9-bac3-4b4733951ba9",
+      "name": "Fetch prior-day report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 300000
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = $input.first().json.message;\nconst recipientEmails = report.recipientEmails || [];\nif (!recipientEmails.length) throw new Error(\"The ERP report did not include any recipient email addresses.\");\nconst money = value => new Intl.NumberFormat(\"id-ID\", { style: \"currency\", currency: \"IDR\", maximumFractionDigits: 0 }).format(Number(value));\nconst subject = `Daily finance digest — ${report.reportingDate}`;\nconst html = `<h2>Daily finance digest</h2><p><strong>Date:</strong> ${report.reportingDate} (${report.timezone})</p><table><tr><td>Income</td><td>${money(report.income)}</td></tr><tr><td>Manufacturing expense</td><td>${money(report.manufacturingExpense)}</td></tr><tr><td>Income minus expense</td><td>${money(report.incomeMinusExpense)}</td></tr><tr><td>Completed orders</td><td>${report.completedOrderCount}</td></tr><tr><td>Cancelled orders</td><td>${report.cancelledOrderCount}</td></tr></table>`;\nreturn [{ json: { subject, html, toEmail: recipientEmails.join(\",\") } }];"
+      },
+      "id": "af21dffb-bcdf-4944-a1bd-025125208a19",
+      "name": "Format email digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 0]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.FINANCE_REPORT_FROM }}",
+        "toEmail": "={{ $json.toEmail }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "c90c938d-36b4-4fc1-a406-bd2b5dffcd3f",
+      "name": "Send finance digest",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [720, 0],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 300000
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every day at 08:00 Jakarta": {
+      "main": [
+        [
+          {
+            "node": "Fetch prior-day report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch prior-day report": {
+      "main": [
+        [
+          {
+            "node": "Format email digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format email digest": {
+      "main": [
+        [
+          {
+            "node": "Send finance digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Jakarta"
+  },
+  "versionId": "20fa0e31-06fa-4b29-b0df-c45de0041a36",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
