@@ -17,7 +17,10 @@
       "name": "Every day at 08:00 Jakarta",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 0]
+      "position": [
+        0,
+        0
+      ]
     },
     {
       "parameters": {
@@ -46,20 +49,26 @@
       "name": "Fetch prior-day report",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [240, 0],
+      "position": [
+        240,
+        0
+      ],
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 300000
     },
     {
       "parameters": {
-        "jsCode": "const report = $input.first().json.message;\nconst recipientEmails = report.recipientEmails || [];\nif (!recipientEmails.length) throw new Error(\"The ERP report did not include any recipient email addresses.\");\nconst money = value => new Intl.NumberFormat(\"id-ID\", { style: \"currency\", currency: \"IDR\", maximumFractionDigits: 0 }).format(Number(value));\nconst subject = `Daily finance digest — ${report.reportingDate}`;\nconst html = `<h2>Daily finance digest</h2><p><strong>Date:</strong> ${report.reportingDate} (${report.timezone})</p><table><tr><td>Income</td><td>${money(report.income)}</td></tr><tr><td>Manufacturing expense</td><td>${money(report.manufacturingExpense)}</td></tr><tr><td>Income minus expense</td><td>${money(report.incomeMinusExpense)}</td></tr><tr><td>Completed orders</td><td>${report.completedOrderCount}</td></tr><tr><td>Cancelled orders</td><td>${report.cancelledOrderCount}</td></tr></table>`;\nreturn [{ json: { subject, html, toEmail: recipientEmails.join(\",\") } }];"
+        "jsCode": "const report = $input.first().json.message;\nconst recipientEmails = report.recipientEmails || [];\nif (!recipientEmails.length) throw new Error(\"The ERP report did not include any recipient email addresses.\");\nconst money = value => new Intl.NumberFormat(\"id-ID\", { style: \"currency\", currency: \"IDR\", maximumFractionDigits: 0 }).format(Number(value));\nconst subject = `Daily finance digest — ${report.reportingDate}`;\nconst html = `<h2>Daily finance digest</h2><p>Yth. Tim Keuangan,</p><p>Berikut adalah ringkasan keuangan harian.</p><p><strong>Date:</strong> ${report.reportingDate} (${report.timezone})</p><table><tr><td>Income</td><td>${money(report.income)}</td></tr><tr><td>Manufacturing expense</td><td>${money(report.manufacturingExpense)}</td></tr><tr><td>Income minus expense</td><td>${money(report.incomeMinusExpense)}</td></tr><tr><td>Completed orders</td><td>${report.completedOrderCount}</td></tr><tr><td>Cancelled orders</td><td>${report.cancelledOrderCount}</td></tr></table>`;\nreturn [{ json: { subject, html, toEmail: recipientEmails.join(\",\") } }];"
       },
       "id": "af21dffb-bcdf-4944-a1bd-025125208a19",
       "name": "Format email digest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 0]
+      "position": [
+        480,
+        0
+      ]
     },
     {
       "parameters": {
@@ -74,7 +83,10 @@
       "name": "Send finance digest",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
-      "position": [720, 0],
+      "position": [
+        720,
+        0
+      ],
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 300000
